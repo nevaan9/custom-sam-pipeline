@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Description: >
+  Resources needed for our pipeline to run
+Resources:
+  # This user will come into play when we have to wire in the prod account (that will come later)
+  # Essentially, the prod account will have a similar PipelineExecutionRole to DevStagePipelineExecutionRole, and this user will have a trust relationship with it (so we can add a manual approval step to deploy to prod)
+  DevStagePipelineUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: AssumeRoles
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Condition:
+                StringEquals:
+                  aws:ResourceTag/Role: dev-stage-pipeline-execution-role
+              Action:
+              - sts:AssumeRole
+              Resource: "*"
+              Effect: Allow
+  # Credentials for above user
+  DevStagePipelineUserCredentials:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      Status: Active
+      UserName: !Ref DevStagePipelineUser
+  # This role will be doing all the bulk of the work. 
+  # It will be building, packaging and deploying aws sam templates in the stage account (see template.yaml -- coming soon)
+  DevStagePipelineExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Tags:
+        - Key: Role
+          Value: dev-stage-pipeline-execution-role #pipeline-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !GetAtt DevStagePipelineUser.Arn
+          Action: sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            AWS: arn:aws:iam::417146377129:root
+          Action: sts:AssumeRole
+          Condition:
+            StringEquals:
+              aws:PrincipalTag/Role: aws-sam-pipeline-codebuild-service-role
+      Policies:
+        - PolicyName: DevStagePipelineExecutionRolePermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:PassRole"
+                Resource: !GetAtt DevStagePipelineCloudFormationExecutionRole.Arn
+              - Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStacks
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:DescribeStackResource
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - s3:GetObject*
+                  - s3:PutObject*
+                  - s3:GetBucket*
+                  - s3:List*
+                Resource:
+                  - !Sub "${DevStagePipelineSamPackageArtifactsBucket.Arn}/*"
+                  - !GetAtt DevStagePipelineSamPackageArtifactsBucket.Arn
+                Effect: Allow
+  # Similar to above. Needed to deploy aws sam templates
+  DevStagePipelineCloudFormationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Action: "sts:AssumeRole"
+          Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+      Policies:
+        - PolicyName: GrantCloudFormationFullAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  # -------- All the below resource are S3 bukcets to store the packaged aws sam templates. There is a main bucket with logging enabled, and there are bucket policies defied below as well ----------------
+  DevStagePipelineSamPackageArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName: !Ref DevStagePipelineSamPackageArtifactsLoggingBucket
+        LogFilePrefix: "artifacts-logs"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  DevStagePipelineSamPackageArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DevStagePipelineSamPackageArtifactsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !Sub "${DevStagePipelineSamPackageArtifactsBucket.Arn}/*"
+              - !GetAtt DevStagePipelineSamPackageArtifactsBucket.Arn
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt DevStagePipelineExecutionRole.Arn
+                - !GetAtt DevStagePipelineCloudFormationExecutionRole.Arn
+            Action:
+              - s3:GetObject*
+              - s3:PutObject*
+              - s3:GetBucket*
+              - s3:List*
+            Resource:
+              - !Sub "${DevStagePipelineSamPackageArtifactsBucket.Arn}/*"
+              - !GetAtt DevStagePipelineSamPackageArtifactsBucket.Arn
+  DevStagePipelineSamPackageArtifactsLoggingBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: "LogDeliveryWrite"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  DevStagePipelineSamPackageArtifactsLoggingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DevStagePipelineSamPackageArtifactsLoggingBucket
+      PolicyDocument:
+        Statement:
+          - Effect: "Deny"
+            Action: "s3:*"
+            Principal: "*"
+            Resource:
+              - !Sub "${DevStagePipelineSamPackageArtifactsLoggingBucket.Arn}/*"
+              - !GetAtt DevStagePipelineSamPackageArtifactsLoggingBucket.Arn
+            Condition:
+              Bool:
+                aws:SecureTransport: false
