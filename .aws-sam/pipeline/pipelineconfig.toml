@@ -9,6 +9,6 @@ pipeline_user = "arn:aws:iam::417146377129:user/testPipelineRoles-DevStagePipeli
 [dev.pipeline_bootstrap.parameters]
 pipeline_execution_role = "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineExecutionRole-FKA4IPL9JIBI"
 cloudformation_execution_role = "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineCloudFormationEx-CDTHZ0YHQWR2"
-artifacts_bucket = "arn:aws:s3:::testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4"
+artifacts_bucket = "testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4"
 image_repository = ""
 region = "us-east-1"
