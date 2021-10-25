@@ -52,7 +52,7 @@ Parameters:
     Default: "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineCloudFormationEx-CDTHZ0YHQWR2" # TODO
   TestingArtifactBucket:
     Type: String
-    Default: "arn:aws:s3:::testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4" # TODO
+    Default: "testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4" # TODO
   TestingImageRepository:
     Type: String
     # If there are functions with "Image" PackageType in your template,
