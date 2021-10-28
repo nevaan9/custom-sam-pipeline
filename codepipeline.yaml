@@ -31,7 +31,7 @@ Parameters:
     Default: "GitHub"
   FullRepositoryId:
     Type: String
-    Default: "nevaan9/custom-sam-pipeline" # TODO
+    Default: "nevaan9/custom-sam-pipeline"
   MainGitBranch:
     Type: String
     Default: "master"
@@ -46,13 +46,13 @@ Parameters:
     Default: "dev-stage-serverless-pipeline"
   TestingPipelineExecutionRole:
     Type: String
-    Default: "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineExecutionRole-FKA4IPL9JIBI" # TODO
+    Default: "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineExecutionRole-FKA4IPL9JIBI"
   TestingCloudFormationExecutionRole:
     Type: String
-    Default: "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineCloudFormationEx-CDTHZ0YHQWR2" # TODO
+    Default: "arn:aws:iam::417146377129:role/testPipelineRoles-DevStagePipelineCloudFormationEx-CDTHZ0YHQWR2"
   TestingArtifactBucket:
     Type: String
-    Default: "testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4" # TODO
+    Default: "testpipelineroles-devstagepipelinesampackageartif-nebpgn6z9tz4"
   TestingImageRepository:
     Type: String
     # If there are functions with "Image" PackageType in your template,
@@ -67,13 +67,13 @@ Parameters:
     Default: "prod-sam-pipeline"
   ProdPipelineExecutionRole:
     Type: String
-    Default: "TODO"
+    Default: "arn:aws:iam::692396471886:role/sam-custom-pipeline-prod-ProdPipelineExecutionRole-66IJ5VHPLM02"
   ProdCloudFormationExecutionExeRole:
     Type: String
-    Default: "TODO"
+    Default: "arn:aws:iam::692396471886:role/sam-custom-pipeline-prod-ProdPipelineCloudFormatio-1DEMDUR6UQBP8"
   ProdArtifactBucket:
     Type: String
-    Default: "TODO"
+    Default: "sam-custom-pipeline-prod-prodpipelinesampackagear-uk06awi132dk"
   # ProdImageRepository:
   #   Type: String
     # If there are functions with "Image" PackageType in your template,

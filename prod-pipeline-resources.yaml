@@ -15,11 +15,11 @@ Resources:
         Statement:
         - Effect: Allow
           Principal:
-            AWS: arn:aws:iam::309208110416:user/veociServerlessPipelineResour-DevStagePipelineUser-V5N56AP5WN2J # allow stage account user to assume this role
+            AWS: arn:aws:iam::417146377129:user/testPipelineRoles-DevStagePipelineUser-QKEXA95VR7OB # allow stage account user to assume this role
           Action: sts:AssumeRole
         - Effect: Allow
           Principal:
-            AWS: arn:aws:iam::309208110416:root # allow stage account to assume this role (only with tag ServerlessCodeBuildServiceRole though)
+            AWS: arn:aws:iam::417146377129:root # allow stage account to assume this role (only with tag ServerlessCodeBuildServiceRole though)
           Action: sts:AssumeRole
           Condition:
             StringEquals:
