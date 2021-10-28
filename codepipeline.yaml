@@ -7,7 +7,7 @@ Description: >
   - UpdatePipeline
   - BuildAndDeployFeatureStack (FeatureGitBranch only)
   - BuildAndPackage (MainGitBranch only)
-  - DeployTest (MainGitBranch only)
+  - DeployDevStage (MainGitBranch only)
   - DeployProd (MainGitBranch only) -- not wired in yet
 
 
@@ -59,22 +59,21 @@ Parameters:
     # Update the line below with image repository URL and add "--image-repository ${TESTING_IMAGE_REPOSITORY}" to
     # prod "sam package" and "sam deploy" commands in buildspec files (in pipeline/).
     Default: ""
-  # --------- TODO -----
-  # ProdRegion:
-  #   Type: String
-  #   Default: "us-east-1"
-  # ProdStackName:
-  #   Type: String
-  #   Default: "prod-sam-pipeline"
-  # ProdPipelineExecutionRole:
-  #   Type: String
-  #   Default: "arn:aws:iam::692396471886:role/aws-sam-cli-managed-prod-pip-PipelineExecutionRole-69CO2AYASQ30"
-  # ProdCloudFormationExecutionExeRole:
-  #   Type: String
-  #   Default: "arn:aws:iam::692396471886:role/aws-sam-cli-managed-prod-CloudFormationExecutionR-1OU5AU025A2I8"
-  # ProdArtifactBucket:
-  #   Type: String
-  #   Default: "aws-sam-cli-managed-prod-pipeline-artifactsbucket-1llrfo3dnl8us"
+  ProdRegion:
+    Type: String
+    Default: "us-east-1"
+  ProdStackName:
+    Type: String
+    Default: "prod-sam-pipeline"
+  ProdPipelineExecutionRole:
+    Type: String
+    Default: "TODO"
+  ProdCloudFormationExecutionExeRole:
+    Type: String
+    Default: "TODO"
+  ProdArtifactBucket:
+    Type: String
+    Default: "TODO"
   # ProdImageRepository:
   #   Type: String
     # If there are functions with "Image" PackageType in your template,
@@ -179,9 +178,9 @@ Resources:
 
         - !If
           - IsMainBranchPipeline
-          - Name: DeployTest
+          - Name: DeployDevStage
             Actions:
-              - Name: DeployTest
+              - Name: DeployDevStage
                 ActionTypeId:
                   Category: Build
                   Owner: AWS
@@ -216,41 +215,39 @@ Resources:
               #   RunOrder: 2
           - !Ref AWS::NoValue
 
-        # Uncomment when prod integration is wired in
-        # - !If
-        #   - IsMainBranchPipeline
-        #   - Name: DeployProd
-        #     Actions:
-        #       # comment this to have a non-manual approval step before deployment to production
-        #       - Name: ManualApproval
-        #         ActionTypeId:
-        #          Category: Approval
-        #          Owner: AWS
-        #          Provider: Manual
-        #          Version: "1"
-        #         RunOrder: 1
-        #       - Name: DeployProd
-        #         ActionTypeId:
-        #           Category: Build
-        #           Owner: AWS
-        #           Provider: CodeBuild
-        #           Version: "1"
-        #         RunOrder: 2 # keeping run order as 2 in case manual approval is enabled
-        #         Configuration:
-        #           ProjectName: !Ref CodeBuildProjectDeploy
-        #           EnvironmentVariables: !Sub |
-        #             [
-        #               {"name": "ENV_TEMPLATE", "value": "packaged-prod.yaml"},
-        #               {"name": "ENV_REGION", "value": "${ProdRegion}"},
-        #               {"name": "ENV_STACK_NAME", "value": "${ProdStackName}"},
-        #               {"name": "ENV_PIPELINE_EXECUTION_ROLE", "value": "${ProdPipelineExecutionRole}"},
-        #               {"name": "ENV_CLOUDFORMATION_EXECUTION_ROLE", "value": "${ProdCloudFormationExecutionExeRole}"},
-        #               {"name": "ENV_BUCKET", "value": "${ProdArtifactBucket}"},
-        #               {"name": "ENV_IMAGE_REPOSITORY", "value": "${ProdImageRepository}"}
-        #             ]
-        #         InputArtifacts:
-        #           - Name: BuildArtifactAsZip
-        #   - !Ref AWS::NoValue
+        - !If
+          - IsMainBranchPipeline
+          - Name: DeployProd
+            Actions:
+              - Name: ManualApproval
+                ActionTypeId:
+                 Category: Approval
+                 Owner: AWS
+                 Provider: Manual
+                 Version: "1"
+                RunOrder: 1
+              - Name: DeployProd
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Provider: CodeBuild
+                  Version: "1"
+                RunOrder: 2 # keeping run order as 2 in case manual approval is enabled
+                Configuration:
+                  ProjectName: !Ref CodeBuildProjectDeploy
+                  EnvironmentVariables: !Sub |
+                    [
+                      {"name": "ENV_TEMPLATE", "value": "packaged-prod.yaml"},
+                      {"name": "ENV_REGION", "value": "${ProdRegion}"},
+                      {"name": "ENV_STACK_NAME", "value": "${ProdStackName}"},
+                      {"name": "ENV_PIPELINE_EXECUTION_ROLE", "value": "${ProdPipelineExecutionRole}"},
+                      {"name": "ENV_CLOUDFORMATION_EXECUTION_ROLE", "value": "${ProdCloudFormationExecutionExeRole}"},
+                      {"name": "ENV_BUCKET", "value": "${ProdArtifactBucket}"},
+                      {"name": "ENV_IMAGE_REPOSITORY", "value": "${ProdImageRepository}"}
+                    ]
+                InputArtifacts:
+                  - Name: BuildArtifactAsZip
+          - !Ref AWS::NoValue
 
   PipelineArtifactsBucket:
     Type: AWS::S3::Bucket
@@ -421,7 +418,7 @@ Resources:
     Properties:
       Tags:
         - Key: Role
-          Value: aws-sam-pipeline-codebuild-service-role
+          Value: ServerlessCodeBuildServiceRole # aws-sam-pipeline-codebuild-service-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -464,7 +461,7 @@ Resources:
                 Resource: "*"
                 Condition:
                   StringEquals:
-                    aws:ResourceTag/Role: dev-stage-pipeline-execution-role
+                    aws:ResourceTag/Role: ServerlessPipelineExecutionRole # dev-stage-pipeline-execution-role
 
   # Uncomment and modify the following step for running the unit-tests
   # CodeBuildProjectUnitTest:
@@ -528,20 +525,20 @@ Resources:
             Value: !Ref SamTemplate
           - Name: TESTING_REGION
             Value: !Ref TestingRegion
-          # - Name: PROD_REGION
-          #   Value: !Ref ProdRegion
+          - Name: PROD_REGION
+            Value: !Ref ProdRegion
           - Name: TESTING_PIPELINE_EXECUTION_ROLE
             Value: !Ref TestingPipelineExecutionRole
-          # - Name: PROD_PIPELINE_EXECUTION_ROLE
-          #   Value: !Ref ProdPipelineExecutionRole
+          - Name: PROD_PIPELINE_EXECUTION_ROLE
+            Value: !Ref ProdPipelineExecutionRole
           - Name: TESTING_ARTIFACT_BUCKET
             Value: !Ref TestingArtifactBucket
-          # - Name: PROD_ARTIFACT_BUCKET
-          #   Value: !Ref ProdArtifactBucket
+          - Name: PROD_ARTIFACT_BUCKET
+            Value: !Ref ProdArtifactBucket
           - Name: TESTING_IMAGE_REPOSITORY
             Value: !Ref TestingImageRepository
-          # - Name: PROD_IMAGE_REPOSITORY
-          #   Value: !Ref ProdImageRepository
+          - Name: PROD_IMAGE_REPOSITORY
+            Value: !Ref ProdImageRepository
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       Source:
         Type: CODEPIPELINE
