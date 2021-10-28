@@ -74,12 +74,12 @@ Parameters:
   ProdArtifactBucket:
     Type: String
     Default: "sam-custom-pipeline-prod-prodpipelinesampackagear-uk06awi132dk"
-  # ProdImageRepository:
-  #   Type: String
+  ProdImageRepository:
+    Type: String
     # If there are functions with "Image" PackageType in your template,
     # Update the line below with image repository URL and add "--image-repository ${PROD_IMAGE_REPOSITORY}" to
     # prod "sam package" and "sam deploy" commands in buildspec files (in pipeline/).
-    # Default: ""
+    Default: ""
   # CodeStarConnectionArn and FeatureGitBranch are required for pipelines for feature branches
   CodeStarConnectionArn:
     Type: String
